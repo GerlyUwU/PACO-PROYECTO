@@ -2,10 +2,15 @@
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import io
-from scipy.stats import mode
-import seaborn as sns
+
+# Definir patologías
+patologias = ['Deaths - Cause: Rheumatic heart disease - Sex: Both sexes - Age group: ALLAges',
+              'Deaths - Cause: Cardiomyopathy, myocarditis, endocarditis - Sex: Both sexes - Age group: ALLAges',
+              'Deaths - Cause: Other circulatory diseases - Sex: Both sexes - Age group: ALLAges',
+              'Deaths - Cause: Hypertensive heart disease - Sex: Both sexes - Age group: ALLAges',
+              'Deaths - Cause: Ischaemic stroke - Sex: Both sexes - Age group: ALLAges',
+              'Deaths - Cause: Haemorrhagic stroke - Sex: Both sexes - Age group: ALLAges',
+              'Deaths - Cause: Ischaemic heart disease - Sex: Both sexes - Age group: ALLAges']
 
 # Definir patologías
 patologias = ['Deaths - Cause: Rheumatic heart disease - Sex: Both sexes - Age group: ALLAges',
@@ -17,6 +22,7 @@ patologias = ['Deaths - Cause: Rheumatic heart disease - Sex: Both sexes - Age g
               'Deaths - Cause: Ischaemic heart disease - Sex: Both sexes - Age group: ALLAges']
 
 # Leer el archivo CSV con la ruta corregida
+df = pd.read_csv('muertes_por_enfermedades.csv')
 try:
     df = pd.read_csv('muertes_por_enfermedades.csv')
 except FileNotFoundError:
@@ -98,6 +104,11 @@ for continente, paises_continente, valores_estandarizados in zip(
     df_continente = df[df['Entity'].isin(paises_continente)]
     for pais in paises_continente:
         df_pais = df_continente[df_continente['Entity'] == pais]
+valores_estandarizados = {}
+
+for continente, paises in continentes.items():
+    for pais in paises:
+        df_pais = df[df['Entity'] == pais]
         if not df_pais.empty:
             for patologia in patologias:
                 if patologia in df_pais.columns:
@@ -112,9 +123,23 @@ for continente, paises_continente, valores_estandarizados in zip(
                     if pais not in valores_estandarizados:
                         valores_estandarizados[pais] = {}
                     valores_estandarizados[pais][patologia_legible] = nval.mean()  # Almacenar el promedio de los valores normalizados
+                data_patologia = df_pais[patologia]
+                media = data_patologia.mean()
+                des_est = data_patologia.std()
+                nval = (data_patologia - media) / des_est
+                patologia_legible = reemplazar_texto(patologia)
+                if pais not in valores_estandarizados:
+                    valores_estandarizados[pais] = {}
+                valores_estandarizados[pais][patologia_legible] = nval.mean()
 
 # Normalizar datos a nivel mundial
 for patologia in patologias:
+    data_patologia = df[patologia]
+    media = data_patologia.mean()
+    des_est = data_patologia.std()
+    nval = (data_patologia - media) / des_est
+    patologia_legible = reemplazar_texto(patologia)
+    valores_estandarizados['Mundo'] = {patologia_legible: nval.mean()}
     if patologia in df.columns:
         data_patologia = df[patologia]
         media = calcular_media_paises(data_patologia)
@@ -140,6 +165,9 @@ for continente, datos in zip(
                 resultados.append({"Continente": continente, "Pais": pais, "Patologia": patologia, "Valor Estandarizado": valor})
         else:
             print(f"Advertencia: Se esperaba un diccionario pero se encontró un {type(valores)} para {pais} en {continente}")
+for pais, valores in valores_estandarizados.items():
+    for patologia, valor in valores.items():
+        resultados.append({"Pais": pais, "Patologia": patologia, "Valor Estandarizado": valor})
 
 # Convertir a DataFrame y guardar en CSV
 df_resultados = pd.DataFrame(resultados)
