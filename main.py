@@ -1,22 +1,10 @@
 # -*- coding: utf-8 -*-
 
-
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import io
-from scipy.stats import mode
-import seaborn as sns
 
 # Leer el archivo CSV con la ruta corregida
-df = pd.read_csv(r'C:\Users\gerli\Downloads\muertes_por_enfermedades.csv')
-
-paises = df['Entity']
-
-# Eliminar duplicados y convertirlo a una lista
-paises_unicos = paises.drop_duplicates().tolist()
-
-print(paises_unicos)
+df = pd.read_csv('muertes_por_enfermedades.csv')
 
 # Definir listas de países por continente
 P_Africa = ["Africa", "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cape Verde", "Central African Republic", "Chad", "Comoros", "Congo", "Democratic Republic of Congo",  "Djibouti",  "Egypt", "Equatorial Guinea",  "Eritrea", "Eswatini", "Ethiopia",  "Gabon", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Cote d'Ivoire", "Kenya", "Lesotho", "Liberia", "Libya", "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique", "Namibia", "Niger", "Nigeria", "Rwanda", "Sao Tome and Principe", "Senegal", "Seychelles", "Sierra Leone", "Somalia",  "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo", "Tunisia", "Uganda", "Zambia", "Zimbabwe"]
@@ -56,65 +44,38 @@ def reemplazar_texto(texto):
                   'Deaths - Cause: Ischaemic heart disease - Sex: Both sexes - Age group: ALLAges': 'Muertes por Enfermedad Cardíaca Isquémica'}
     return reemplazos.get(texto, texto)
 
-# Filtrar datos por continente
-Paises_Africa = df[df['Entity'].isin(P_Africa)]
-Paises_Asia = df[df['Entity'].isin(P_Asia)]
-Paises_AmericaNorte = df[df['Entity'].isin(P_AmericaNorte)]
-Paises_AmericaSur = df[df['Entity'].isin(P_AmericaSur)]
-Paises_Oceania = df[df['Entity'].isin(P_Oceania)]
-Paises_Europa = df[df['Entity'].isin(P_Europa)]
-
-# Diccionarios para almacenar los valores estandarizados
-valores_estandarizados_africa = {}
-valores_estandarizados_asia = {}
-valores_estandarizados_americanorte = {}
-valores_estandarizados_americasur = {}
-valores_estandarizados_oceania = {}
-valores_estandarizados_europa = {}
-valores_estandarizados_mundo = {}
-
-# Definir funciones para cálculos estadísticos
-def calcular_media_paises(data):
-    return np.mean(data)
-
-def calcular_varianza_paises(data):
-    return np.var(data)
-
 # Normalizar datos por continente
-for continente, paises_continente in zip(
-        [P_Africa, P_Asia, P_AmericaNorte, P_AmericaSur, P_Oceania, P_Europa],
-        [valores_estandarizados_africa, valores_estandarizados_asia, valores_estandarizados_americanorte, valores_estandarizados_americasur, valores_estandarizados_oceania, valores_estandarizados_europa]):
-    for pais in paises_continente:
+valores_estandarizados = {}
+
+for continente, paises in continentes.items():
+    for pais in paises:
         df_pais = df[df['Entity'] == pais]
         if not df_pais.empty:
             for patologia in patologias:
                 data_patologia = df_pais[patologia]
-                media = calcular_media_paises(data_patologia)
-                des_est = np.sqrt(calcular_varianza_paises(data_patologia))
+                media = data_patologia.mean()
+                des_est = data_patologia.std()
                 nval = (data_patologia - media) / des_est
                 patologia_legible = reemplazar_texto(patologia)
-                if pais not in paises_continente:
-                    paises_continente[pais] = {}
-                paises_continente[pais][patologia_legible] = nval.mean()  # Almacenar el promedio de los valores normalizados
+                if pais not in valores_estandarizados:
+                    valores_estandarizados[pais] = {}
+                valores_estandarizados[pais][patologia_legible] = nval.mean()
 
 # Normalizar datos a nivel mundial
 for patologia in patologias:
     data_patologia = df[patologia]
-    media = calcular_media_paises(data_patologia)
-    des_est = np.sqrt(calcular_varianza_paises(data_patologia))
+    media = data_patologia.mean()
+    des_est = data_patologia.std()
     nval = (data_patologia - media) / des_est
     patologia_legible = reemplazar_texto(patologia)
-    valores_estandarizados_mundo[patologia_legible] = nval.mean()  # Almacenar el promedio de los valores normalizados
+    valores_estandarizados['Mundo'] = {patologia_legible: nval.mean()}
 
 # Crear DataFrame con los resultados normalizados y escribir en un nuevo archivo CSV
 resultados = []
 
-for continente, datos in zip(
-        ["Africa", "Asia", "America del Norte", "America del Sur", "Oceania", "Europa", "Mundo"],
-        [valores_estandarizados_africa, valores_estandarizados_asia, valores_estandarizados_americanorte, valores_estandarizados_americasur, valores_estandarizados_oceania, valores_estandarizados_europa, valores_estandarizados_mundo]):
-    for pais, valores in datos.items():
-        for patologia, valor in valores.items():
-            resultados.append({"Continente": continente, "Pais": pais, "Patologia": patologia, "Valor Estandarizado": valor})
+for pais, valores in valores_estandarizados.items():
+    for patologia, valor in valores.items():
+        resultados.append({"Pais": pais, "Patologia": patologia, "Valor Estandarizado": valor})
 
 # Convertir a DataFrame y guardar en CSV
 df_resultados = pd.DataFrame(resultados)
