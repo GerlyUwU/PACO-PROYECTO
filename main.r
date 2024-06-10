@@ -154,3 +154,5 @@ df_resultados <- bind_rows(resultados)
 output_file <- "resultados_estandarizados.csv"
 write_csv(df_resultados, output_file)
 cat("Archivo CSV 'resultados_estandarizados.csv' creado con éxito.\n")
+
+#hola el maricon de luis 
