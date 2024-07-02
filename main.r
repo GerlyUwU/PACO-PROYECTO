@@ -164,3 +164,4 @@ cat("Archivo CSV 'resultados_estandarizados.csv' creado con éxito.\n")
 #hola buenos dias 
 # mala noticia mi gente, mala noticia
 #nos fuimos mi gente
+#pedro pedro pedro 
